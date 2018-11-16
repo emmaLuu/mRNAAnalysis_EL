@@ -127,7 +127,6 @@ for currentDataSet = dataSetsToInclude
         
         nameTemp = regexp(data(currentDataSet).Prefix,'\d*','Match');
         namesLoading{end+1} = nameTemp{end};
-        disp(nameTemp{end})
     end
     hold off 
     
