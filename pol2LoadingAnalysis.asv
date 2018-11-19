@@ -127,6 +127,7 @@ for currentDataSet = dataSetsToInclude
         
         nameTemp = regexp(data(currentDataSet).Prefix,'\d*','Match');
         namesLoading{end+1} = nameTemp{end};
+        disp(nameTemp{end})
     end
     hold off 
     
@@ -161,6 +162,7 @@ meanInitialRateAP = NaN(1,numAPBins);
 seInitialRateAP = NaN(1,numAPBins);
 meanTimeOnAP = NaN(1,numAPBins);
 apBinGrouping = NaN(1,length(allInitialSlopes)); % stores corresponding bin string for allInitialSlopes
+allTimeOns = [];
 
 % binPlots = plot(NaN,NaN);
 % binNames = {'placeholder'};
@@ -174,6 +176,7 @@ for currentAPBinIndex = 2:numAPBins % index of upper bound of ap
     denomLoading = sqrt(sum(~isnan((allInitialSlopes(pointsIncluded)))));
     
     meanTimeOnAP(currentAPBinIndex-1) = nanmean(allTimeOn(pointsIncluded));
+    allTimeOns = [allTimeOns, allTimeOn(pointsIncluded)];
     denomTimeOn = sqrt(sum(~isnan((allTimeOn(pointsIncluded)))));
     
     if ~denomLoading
@@ -221,3 +224,15 @@ xlabel('fraction anterior-posterior')
 ylabel('time on (minutes)')
 standardizeFigure(gca, [], 'fontSize', 14)
 set(erTimeON, 'LineStyle', '-')
+
+%time on histogram figure
+timeOnHistFig = figure();
+timeOnHistAxes = axes(timeOnHistFig);
+timeOnHist = histogram(timeOnHistAxes,allTimeOns, 'normalization', 'pdf');
+xlabel(timeOnHistAxes,'time on (min)')
+ylabel(timeOnHistAxes,'probability')
+title('
+xlim(timeOnHistAxes, [-Inf, 20]) %mins
+standardizeFigure(timeOnHistAxes, [])
+
+

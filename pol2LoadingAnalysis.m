@@ -1,3 +1,4 @@
+function pol2LoadingAnalysis(dataSet)
 allColors = [0.9412    0.2353    0.2353;...
     0.9412    0.6118    0.2353;...
     0.9412    0.8941    0.2353;...
@@ -19,8 +20,6 @@ allColors = [0.9412    0.2353    0.2353;...
     0.5804    1.0000    0.9451;...
     0.5804    0.8863    1.0000];
 
-close all
-dataSet = 'mcp_opt';%'p2p_4f_opt';
 data = LoadMS2Sets(dataSet);
 
 % Checking to see which data sets has fittedLineEquations
@@ -162,6 +161,7 @@ meanInitialRateAP = NaN(1,numAPBins);
 seInitialRateAP = NaN(1,numAPBins);
 meanTimeOnAP = NaN(1,numAPBins);
 apBinGrouping = NaN(1,length(allInitialSlopes)); % stores corresponding bin string for allInitialSlopes
+allTimeOns = [];
 
 % binPlots = plot(NaN,NaN);
 % binNames = {'placeholder'};
@@ -175,6 +175,7 @@ for currentAPBinIndex = 2:numAPBins % index of upper bound of ap
     denomLoading = sqrt(sum(~isnan((allInitialSlopes(pointsIncluded)))));
     
     meanTimeOnAP(currentAPBinIndex-1) = nanmean(allTimeOn(pointsIncluded));
+    allTimeOns = [allTimeOns, allTimeOn(pointsIncluded)];
     denomTimeOn = sqrt(sum(~isnan((allTimeOn(pointsIncluded)))));
     
     if ~denomLoading
@@ -185,7 +186,7 @@ for currentAPBinIndex = 2:numAPBins % index of upper bound of ap
     if ~denomTimeOn 
         denomTimeON = 1;
     end
-    seTimeOnAP(currentAPBinIndex-1) = nanstd(allInitialSlopes(pointsIncluded))/denomTimeON;
+    seTimeOnAP(currentAPBinIndex-1) = nanstd(allTimeOn(pointsIncluded))/denomTimeON;
     
     %     if sum(pointsIncluded)
 %         binPlots(end+1) = plot(allAPPositions(pointsIncluded),...
@@ -196,29 +197,41 @@ end
 figure(boxLoading)
 boxplot(allInitialSlopes,apBinGrouping,'PlotStyle','Compact')
 
-figure(avgLoading)
-hold on 
+%rate vs. ap curve figure
+rateFig = figure();
+rateAxes = axes(rateFig);
 % % bar(ap+apBinWidth/2,meanInitialRateAP);
 idx = ~any(isnan(seInitialRateAP),1);
 x = ap+apBinWidth/2;
-er = errorbar(x(idx),meanInitialRateAP(idx), seInitialRateAP(idx));
-xlim([.2 .9])
-% ylim([0, 600])
-set(gca,'YScale','log');
-xlabel('fraction anterior-posterior')
-ylabel('pol II loading rate(a.u./minute)')
-standardizeFigure(gca, [], 'fontSize', 14)
+er = errorbar(rateAxes,x(idx),meanInitialRateAP(idx), seInitialRateAP(idx));
+xlim(rateAxes,[.275,.65])
+ylim(rateAxes,[0, 1000])
+xlabel(rateAxes,'fraction anterior-posterior')
+ylabel(rateAxes,'pol II loading rate(a.u./min)')
+standardizeFigure(rateAxes, [], 'fontSize', 14)
 set(er, 'LineStyle', '-')
 
-figure(avgTimeOn)
-hold on 
+%time on figure
+timeOnFig = figure();
+timeOnAxes = axes(timeOnFig);
 idXTimeOn = ~any(isnan(seTimeOnAP),1);
 x = ap+apBinWidth/2;
-erTimeON = errorbar(x(idXTimeOn),meanTimeOnAP(idXTimeOn), seTimeOnAP(idXTimeOn));
-xlim([.2 .9])
-ylim([-10 30])
-% set(gca,'YScale','log');
-xlabel('fraction anterior-posterior')
-ylabel('time on (minutes)')
-standardizeFigure(gca, [], 'fontSize', 14)
+erTimeON = errorbar(timeOnAxes,x(idXTimeOn),meanTimeOnAP(idXTimeOn), seTimeOnAP(idXTimeOn));
+xlim(timeOnAxes,[.275 .65])
+ylim(timeOnAxes,[0 20])
+xlabel(timeOnAxes,'fraction anterior-posterior')
+ylabel(timeOnAxes,'time on (min)')
+standardizeFigure(timeOnAxes, [], 'fontSize', 14)
 set(erTimeON, 'LineStyle', '-')
+
+%time on histogram figure
+timeOnHistFig = figure();
+timeOnHistAxes = axes(timeOnHistFig);
+timeOnHist = histogram(timeOnHistAxes,allTimeOns, 'normalization', 'pdf', 'BinWidth', 1);
+xlabel(timeOnHistAxes,'time on (min)')
+ylabel(timeOnHistAxes,'probability')
+title(timeOnHistAxes,'Time on freqeuency distribution for 1A3v7, nuclear cycle 12, all AP bins');
+xlim(timeOnHistAxes, [0, 10]) %mins
+standardizeFigure(timeOnHistAxes, [])
+
+
