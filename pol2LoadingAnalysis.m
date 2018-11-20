@@ -64,6 +64,7 @@ allAPPositions = [];
 allInitialSlopes = [];
 allSlopeError = []; % the error is taken to be the norm of the residuals
 allTimeOn = [];
+allCorrespondingNC = [];
 
 for currentDataSet = dataSetsToInclude
     numberOfParticles = length(data(currentDataSet).Particles);
@@ -72,14 +73,25 @@ for currentDataSet = dataSetsToInclude
     currentInitialSlopes = NaN(1,numberOfParticles);
     currentTimeOn = NaN(1,numberOfParticles);
     errorEstimations = NaN(1,numberOfParticles);
+    currentNuclearCycle = NaN(1,numberOfParticles); % stores the corresponding nuclear cycle of the particle
+    
+    anaphaseBoundaries = [data(currentDataSet).nc9,data(currentDataSet).nc10,...
+        data(currentDataSet).nc11,data(currentDataSet).nc12,...
+        data(currentDataSet).nc13,data(currentDataSet).nc14];
+    
     for currentParticle = 1:numberOfParticles
         apPositions(currentParticle) = mean(data(currentDataSet).Particles(currentParticle).APpos);
+        firstFrame = data(currentDataSet).Particles(currentParticle).Frame(1);
+        [~,sortedIndex] = sort([anaphaseBoundaries firstFrame]); 
+        tempIndex = find(sortedIndex == length(anaphaseBoundaries)+1); 
+        currentNuclearCycle(currentParticle) = sortedIndex(tempIndex-1) + 8;
+        
         try
             tempSlope = ...
                 data(currentDataSet).fittedLineEquations(currentParticle).Coefficients(1,1);
             tempTimeOn = roots(data(currentDataSet).fittedLineEquations(currentParticle).Coefficients(1,:));
-            disp([num2str(currentDataSet) ', ' num2str(currentParticle) ': ' ...
-                num2str(tempTimeOn)])
+%             disp([num2str(currentDataSet) ', ' num2str(currentParticle) ': ' ...
+%                 num2str(tempTimeOn)])
             if tempSlope >= 0
                 currentInitialSlopes(currentParticle) = tempSlope;
                 errorEstimations(currentParticle) =...
@@ -95,6 +107,7 @@ for currentDataSet = dataSetsToInclude
     allInitialSlopes(end+1:end+numberOfParticles) = currentInitialSlopes;
     allSlopeError(end+1:end+numberOfParticles) = errorEstimations;
     allTimeOn(end+1:end+numberOfParticles) = currentTimeOn;
+    allCorrespondingNC(end+1:end+numberOfParticles) = currentNuclearCycle;
     
     %Plotting loading rate vs AP -----------------------------------------
     %Plotting the error bars
@@ -126,7 +139,7 @@ for currentDataSet = dataSetsToInclude
         
         nameTemp = regexp(data(currentDataSet).Prefix,'\d*','Match');
         namesLoading{end+1} = nameTemp{end};
-        disp(nameTemp{end})
+%         disp(nameTemp{end})
     end
     hold off 
     
@@ -224,10 +237,11 @@ ylabel(timeOnAxes,'time on (min)')
 standardizeFigure(timeOnAxes, [], 'fontSize', 14)
 set(erTimeON, 'LineStyle', '-')
 
-%time on histogram figure
+%time on histogram figure (nc12)
 timeOnHistFig = figure();
+nc12Only = allCorrespondingNC == 12;
 timeOnHistAxes = axes(timeOnHistFig);
-timeOnHist = histogram(timeOnHistAxes,allTimeOns, 'normalization', 'pdf', 'BinWidth', 1);
+timeOnHist = histogram(timeOnHistAxes,allTimeOns(nc12Only), 'normalization', 'pdf', 'BinWidth', 1);
 xlabel(timeOnHistAxes,'time on (min)')
 ylabel(timeOnHistAxes,'probability')
 title(timeOnHistAxes,'Time on freqeuency distribution for 1A3v7, nuclear cycle 12, all AP bins');
