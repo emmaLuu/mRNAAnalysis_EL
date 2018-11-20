@@ -42,24 +42,24 @@ boxLoading = figure();
 set(boxLoading,'Position',[693 43.5000 585.5000 215])
 
 % figure for avg loading rate vs AP
-avgLoading = figure();
-set(avgLoading,'Position',[692 341 583 303.5000])
+% avgLoading = figure();
+% set(avgLoading,'Position',[692 341 583 303.5000])
 
 % figure for time on vs AP
 % scatterTimeOn = figure();
 
 % figure for avg time on vs AP
-avgTimeOn = figure();
-set(avgTimeOn,'Position',[691.5000 43.5000 583 303.5000])
+% avgTimeOn = figure();
+% set(avgTimeOn,'Position',[691.5000 43.5000 583 303.5000])
 
 
 %% plotting with continous AP axis
-colorsUsed = {};
-meansOfSets = [];
+% colorsUsed = {};
+% meansOfSets = [];
 plotsLabeledLoading = plot(NaN,NaN);
-plotsLabeledTimeOn = plot(NaN,NaN);
+% plotsLabeledTimeOn = plot(NaN,NaN);
 namesLoading = {'placeHolder'};
-namesTimeOn = {'placeHolder'};
+% namesTimeOn = {'placeHolder'};
 allAPPositions = [];
 allInitialSlopes = [];
 allSlopeError = []; % the error is taken to be the norm of the residuals
@@ -67,7 +67,7 @@ allTimeOn = [];
 
 for currentDataSet = dataSetsToInclude
     numberOfParticles = length(data(currentDataSet).Particles);
-    labelPlot = 0; %condition 
+%     labelPlot = 0; %condition 
     clear apPositions
     currentInitialSlopes = NaN(1,numberOfParticles);
     currentTimeOn = NaN(1,numberOfParticles);
@@ -154,8 +154,8 @@ set(gca,'YScale','log')
 %% plotting with binned ap
 ap = data(1).APbinID;
 apBinWidth = ap(2)-ap(1);
-apMid = ap+apBinWidth/2;
-apMidString = cellstr(string(ap+apBinWidth/2));
+% apMid = ap+apBinWidth/2;
+% apMidString = cellstr(string(ap+apBinWidth/2));
 numAPBins = length(ap);
 meanInitialRateAP = NaN(1,numAPBins);
 seInitialRateAP = NaN(1,numAPBins);
@@ -234,4 +234,5 @@ title(timeOnHistAxes,'Time on freqeuency distribution for 1A3v7, nuclear cycle 1
 xlim(timeOnHistAxes, [0, 10]) %mins
 standardizeFigure(timeOnHistAxes, [])
 
+end
 
