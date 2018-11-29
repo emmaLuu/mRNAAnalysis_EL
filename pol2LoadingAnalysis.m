@@ -58,8 +58,9 @@ set(boxLoading,'Position',[693 43.5000 585.5000 215])
 % meansOfSets = [];
 plotsLabeledLoading = plot(NaN,NaN);
 % plotsLabeledTimeOn = plot(NaN,NaN);
+%plotsLabeledTimeOn = plot(NaN,NaN);
 namesLoading = {'placeHolder'};
-% namesTimeOn = {'placeHolder'};
+%namesTimeOn = {'placeHolder'};
 allAPPositions = [];
 allInitialSlopes = [];
 allSlopeError = []; % the error is taken to be the norm of the residuals
@@ -68,7 +69,7 @@ allCorrespondingNC = [];
 
 for currentDataSet = dataSetsToInclude
     numberOfParticles = length(data(currentDataSet).Particles);
-%     labelPlot = 0; %condition 
+    labelPlot = 0; %condition 
     clear apPositions
     currentInitialSlopes = NaN(1,numberOfParticles);
     currentTimeOn = NaN(1,numberOfParticles);
@@ -113,6 +114,7 @@ for currentDataSet = dataSetsToInclude
     %Plotting the error bars
     figure(scatterLoading)
     hold on
+%     apPositions = 0.3.*ones(1,length(currentInitialSlopes));
     errorbar(apPositions, currentInitialSlopes,errorEstimations,'.',...
         'Color','black');%allColors(currentDataSet,:));
     %Plotting the values 
@@ -127,9 +129,9 @@ for currentDataSet = dataSetsToInclude
         startX = min(apBinOfMovie);
         endX = max(apBinOfMovie);
         lengthX = endX-startX;
-        
-        rectanglePosition = [ startX meanInitialSlope*0.99 ...
-            lengthX meanInitialSlope*0.01];
+        paddedBoundary = 0.05;
+        rectanglePosition = [ startX-paddedBoundary meanInitialSlope*0.99 ...
+            lengthX+2*paddedBoundary meanInitialSlope*0.01];
         rectangle('Position',rectanglePosition,'Curvature',0.2,...
             'FaceColor',allColors(currentDataSet,:),...
             'EdgeColor',allColors(currentDataSet,:));
@@ -138,7 +140,7 @@ for currentDataSet = dataSetsToInclude
 %             '.','MarkerSize',30,'Color',allColors(currentDataSet,:));%h.Color);
         
         nameTemp = regexp(data(currentDataSet).Prefix,'\d*','Match');
-        namesLoading{end+1} = nameTemp{end};
+%         namesLoading{end+1} = nameTemp{end};
 %         disp(nameTemp{end})
     end
     hold off 
@@ -154,7 +156,7 @@ legend([plotsLabeledLoading(2:end)],{namesLoading{2:end}}, 'Interpreter', 'none'
 xlim([0 1])
 xlabel('Embryo Length (%)')
 ylabel('Initial Rate (a.u./minute)')
-set(gca,'YScale','log')
+% set(gca,'YScale','log')
 
 % for time on vs AP -------------------------------------------------------
 % figure(scatterTimeOn)
@@ -201,7 +203,7 @@ for currentAPBinIndex = 2:numAPBins % index of upper bound of ap
     end
     seTimeOnAP(currentAPBinIndex-1) = nanstd(allTimeOn(pointsIncluded))/denomTimeON;
     
-    %     if sum(pointsIncluded)
+%     if sum(pointsIncluded)
 %         binPlots(end+1) = plot(allAPPositions(pointsIncluded),...
 %             allInitialSlopes(pointsIncluded),'.','MarkerSize',10);
 %     end
@@ -237,16 +239,19 @@ ylabel(timeOnAxes,'time on (min)')
 standardizeFigure(timeOnAxes, [], 'fontSize', 14)
 set(erTimeON, 'LineStyle', '-')
 
-%time on histogram figure (nc12)
-timeOnHistFig = figure();
-nc12Only = allCorrespondingNC == 12;
-timeOnHistAxes = axes(timeOnHistFig);
-timeOnHist = histogram(timeOnHistAxes,allTimeOns(nc12Only), 'normalization', 'pdf', 'BinWidth', 1);
-xlabel(timeOnHistAxes,'time on (min)')
-ylabel(timeOnHistAxes,'probability')
-title(timeOnHistAxes,'Time on freqeuency distribution for 1A3v7, nuclear cycle 12, all AP bins');
-xlim(timeOnHistAxes, [0, 10]) %mins
-standardizeFigure(timeOnHistAxes, [])
-
+%time on histogram figure (nc12,13,14)
+ncOfInterest = [12 13 14];
+for currentNC = ncOfInterest
+    currentTimeOnHistFig = figure();
+    currentNCOnly = allCorrespondingNC == currentNC;
+    currentTimeOnHistAxes = axes(currentTimeOnHistFig);
+    timeOnHist = histogram(currentTimeOnHistAxes,allTimeOns(currentNCOnly), 'normalization', 'pdf', 'BinWidth', 1);
+    xlabel(currentTimeOnHistAxes,'time on (min)')
+    ylabel(currentTimeOnHistAxes,'probability')
+    title(currentTimeOnHistAxes,['Time on freqeuency distribution for 1A3v7, nuclear cycle '...
+        num2str(currentNC) ', all AP bins']);
+    xlim(currentTimeOnHistAxes, [0, 10]) %mins
+    standardizeFigure(currentTimeOnHistAxes, [])
+end
 end
 
