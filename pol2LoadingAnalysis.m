@@ -176,7 +176,7 @@ meanInitialRateAP = NaN(1,numAPBins);
 seInitialRateAP = NaN(1,numAPBins);
 meanTimeOnAP = NaN(1,numAPBins);
 apBinGrouping = NaN(1,length(allInitialSlopes)); % stores corresponding bin string for allInitialSlopes
-allTimeOns = [];
+% allTimeOnByAP = [];
 
 % binPlots = plot(NaN,NaN);
 % binNames = {'placeholder'};
@@ -190,7 +190,7 @@ for currentAPBinIndex = 2:numAPBins % index of upper bound of ap
     denomLoading = sqrt(sum(~isnan((allInitialSlopes(pointsIncluded)))));
     
     meanTimeOnAP(currentAPBinIndex-1) = nanmean(allTimeOn(pointsIncluded));
-    allTimeOns = [allTimeOns, allTimeOn(pointsIncluded)];
+%     allTimeOnByAP = [allTimeOnByAP, allTimeOn(pointsIncluded)];
     denomTimeOn = sqrt(sum(~isnan((allTimeOn(pointsIncluded)))));
     
     if ~denomLoading
@@ -245,7 +245,7 @@ for currentNC = ncOfInterest
     currentTimeOnHistFig = figure();
     currentNCOnly = allCorrespondingNC == currentNC;
     currentTimeOnHistAxes = axes(currentTimeOnHistFig);
-    timeOnHist = histogram(currentTimeOnHistAxes,allTimeOns(currentNCOnly), 'normalization', 'pdf', 'BinWidth', 1);
+    timeOnHist = histogram(currentTimeOnHistAxes,allTimeOn(currentNCOnly), 'normalization', 'pdf', 'BinWidth', 1);
     xlabel(currentTimeOnHistAxes,'time on (min)')
     ylabel(currentTimeOnHistAxes,'probability')
     title(currentTimeOnHistAxes,['Time on freqeuency distribution for 1A3v7, nuclear cycle '...
