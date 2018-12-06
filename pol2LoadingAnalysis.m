@@ -1,4 +1,5 @@
 function pol2LoadingAnalysis(dataSet)
+
 allColors = [0.9412    0.2353    0.2353;...
     0.9412    0.6118    0.2353;...
     0.9412    0.8941    0.2353;...
@@ -253,5 +254,6 @@ for currentNC = ncOfInterest
     xlim(currentTimeOnHistAxes, [0, 10]) %mins
     standardizeFigure(currentTimeOnHistAxes, [])
 end
+
 end
 
