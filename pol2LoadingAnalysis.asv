@@ -153,7 +153,7 @@ for currentDataSet = dataSetsToInclude
 end
 % for loading rate vs AP --------------------------------------------------
 figure(scatterLoading)
-legend(plotsLabeledLoading(2:end),{namesLoading{2:end}}, 'Interpreter', 'none');
+legend([plotsLabeledLoading(2:end)],{namesLoading{2:end}}, 'Interpreter', 'none');
 xlim([0 1])
 xlabel('Embryo Length (%)')
 ylabel('Initial Rate (a.u./minute)')
