@@ -15,8 +15,8 @@ nameSuffix = '_ch01';
 NDigits=3;
 
 stillLooking = 1;
-CurrentZ = 15;
-CurrentFrame = 97;
+CurrentZ = 16;
+CurrentFrame = 101;
 sharpCoeff = [0 0 0;0 1 0;0 0 0]-fspecial('laplacian',0.2);
 sigma = 1.5;
 while stillLooking

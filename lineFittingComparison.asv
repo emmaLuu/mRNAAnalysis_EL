@@ -1,0 +1,260 @@
+function lineFittingComparison(prefix,currentParticle,varargin)
+% This will be code to test/compare different fitting of a single trace
+
+% option to change the averagingLength
+averagingLength = 3;
+currentChannel = 1;
+windows = 3; % for the number of subplots
+if isempty(prefix)
+    prefix = '2018-11-05-half_bcd_opt_1';
+end
+
+if isempty(currentParticle)
+    currentParticle = 1;
+end
+
+
+%% Get the folders
+[~,~,DefaultDropboxFolder,~,~] = DetermineLocalFolders;
+
+[~,~,dropboxFolder,~,~]=...
+    DetermineLocalFolders(prefix);
+
+dataFolder=[dropboxFolder,filesep,prefix];
+
+filePrefix=[dataFolder(length(dropboxFolder)+2:end),'_'];
+
+%Now get the actual folders
+[~,~,dropboxFolder,~,~]=...
+    DetermineLocalFolders(filePrefix(1:end-1));
+
+%% Loading Particles,Spots,FrameInfo and Schnitzcells
+load([dataFolder,filesep,'Particles.mat'])
+load([dataFolder,filesep,'Spots.mat'])
+load([dataFolder,filesep,'FrameInfo.mat'])
+load([dropboxFolder,filesep,filePrefix(1:end-1),filesep,filePrefix(1:end-1),'_lin.mat'])
+
+if isfield(schnitzcells,'approved')
+    schnitzcells=rmfield(schnitzcells,'approved');
+end
+if isfield(schnitzcells,'ang')
+    schnitzcells=rmfield(schnitzcells,'ang');
+end
+
+if ~iscell(Particles)
+    Particles={Particles};
+    if ~iscell(Spots)
+        Spots={Spots};
+    end
+    SpotFilter={SpotFilter};
+    NChannels=1;
+end
+
+%% Extracting more information that we need
+% getting experimental data from movie database
+[~, ~, ~, ~, ~, ~,...
+    ~, ~, ~, ~, ~, ~, ~,...
+    nc9, nc10, nc11, nc12, nc13, nc14, ~] = ...
+    getExperimentDataFromMovieDatabase(prefix, DefaultDropboxFolder);
+
+% getting correspondingNCInfo
+correspondingNCInfo = [FrameInfo.nc]; % the assigned nc of the frames
+
+%getting numFrames
+numFrames =length(FrameInfo);
+
+%Calculating ElapsedTime
+for j=1:numFrames
+    elapsedTime(j)=FrameInfo(j).Time-FrameInfo(1).Time;
+end
+elapsedTime=elapsedTime/60;     %Time is in minutes
+
+anaphase = [nc9,nc10,nc11,nc12,nc13,nc14];
+%changing from frames to minutes
+anaphaseInMins = anaphase;
+for i = 1:length(anaphase)
+    if anaphase(i) > 0
+        anaphaseInMins(i) = elapsedTime(anaphase(i)); % in units of minutes
+    end
+end
+
+%% getting current measured trace
+[frames,ampIntegral,ampIntegral3,~,~,~,...
+    errorIntegral,~,~,~,errorIntegral3,...
+    ~,~, ampIntegralGauss3D, errorIntegralGauss3D]=...
+    GetParticleTrace(currentParticle,Particles{currentChannel},Spots{currentChannel});
+
+%Default is to use AmpIntegralGauss3D, second default is AmpIntegral3
+if ~isempty(ampIntegralGauss3D)
+    amplitudeToFit = ampIntegralGauss3D;
+else
+    amplitudeToFit = ampIntegral3;
+end
+
+ncPresent = unique(correspondingNCInfo(frames));
+% below subtracts 8 because the first element corresponds to nc 9
+priorAnaphaseInMins = anaphaseInMins(ncPresent(1)-8);
+nucleusFirstFrame = elapsedTime(...
+    schnitzcells(Particles{currentChannel}(currentParticle).Nucleus).frames(1));
+
+%% Plotting trace that will be fitted to
+figure('name','Methods Comparison')
+ncPresent = unique(correspondingNCInfo(frames));
+% below subtracts 8 because the first element corresponds to nc 9
+priorAnaphaseInMins = anaphaseInMins(ncPresent(1)-8);
+nucleusFirstFrame = elapsedTime(...
+    schnitzcells(Particles{currentChannel}(currentParticle).Nucleus).frames(1));
+%             traceFigTimeAxis = ElapsedTime(Frames);
+%             traceFigTimeAxis = ElapsedTime(Frames) - priorAnaphaseInMins;
+traceFigTimeAxis = elapsedTime(frames) - nucleusFirstFrame;
+
+for currentWindow = 1:windows
+    subplot(1,windows,currentWindow)
+    hold('on')
+    p1 = errorbar(traceFigTimeAxis(Particles{currentChannel}(currentParticle).FrameApproved),...
+        ampIntegral(Particles{currentChannel}(currentParticle).FrameApproved),...
+        ones(length(ampIntegral(Particles{currentChannel}(currentParticle).FrameApproved)),1)'*errorIntegral,...
+        '.-k','DisplayName','AmpIntegral1');
+    p2 = errorbar(traceFigTimeAxis(Particles{currentChannel}(currentParticle).FrameApproved),...
+        ampIntegralGauss3D(Particles{currentChannel}(currentParticle).FrameApproved),...
+        ones(length(ampIntegralGauss3D(Particles{currentChannel}(currentParticle).FrameApproved)),1)'*errorIntegralGauss3D,...
+        '.-','Color','green','DisplayName','3DGaussAmp');
+    hold('off')
+end
+
+%% Fitting the single traces
+
+% method 1: binary state to guess point change
+% currently shifted by the first frame of the assigned nucleus
+[frameIndex,coefficientsMethod1,ErrorEstimation,nParticlesForFit] = ...
+    fitASingleTrace(currentParticle,Particles,Spots,currentChannel,...
+    schnitzcells,elapsedTime,anaphaseInMins,correspondingNCInfo,...
+    averagingLength,'initialOnly','skipSavingTraces');
+
+% method 2: cusum (Detect small changes in mean via cumulative sums)
+controlLimit = 2; %max sigmas away from the mean
+minimumMeanShift = 1; %minimum mean shift to detect (units of standard deviations)
+targetMean = []; %target mean of the overall signal which to make the baseline measurement.
+targetStandardDeviation = []; %target standard deviation from which to compute the upper and lower control limits
+[indexUpper, indexLower] = ...
+    cusum(amplitudeToFit, controlLimit, minimumMeanShift,'all');%, targetMean, targetStandardDeviation);
+
+coefficientsMethod2 = [];
+if ~isempty(indexUpper)
+    coefficientsMethod2 = polyfit(traceFigTimeAxis(1:indexUpper(1)),...
+        amplitudeToFit(1:indexUpper(1)),1);
+end
+
+% method 3: findchangepts (finding abrupt changes in a signal)
+maxNumChanges = 3;
+indexPoints = findchangepts(x,'Statistic','linear','MaxNumChanges',maxNumChanges);
+coefficientsMethod3 = [];
+if ~isempty(indexPoints)
+    coefficientsMethod3 = polyfit(traceFigTimeAxis(1:indexPoints(1)),...
+        amplitudeToFit(1:indexPoints(1)),1);
+end
+
+%% plotting the fitted line: Method 1 (binary state to guess point change)
+subplot(1,windows,1)
+if ~isempty(coefficientsMethod1)
+    currentXSegment = traceFigTimeAxis(frameIndex(1):frameIndex(end));
+    currentYSegment = polyval(coefficientsMethod1,currentXSegment);
+    hold('on')
+    to = -coefficientsMethod1(2) / coefficientsMethod1(1) + nucleusFirstFrame;
+    timeAxisMethod1 = [to, elapsedTime(frames(frameIndex(1):frameIndex(end)))] - nucleusFirstFrame;
+    currentYSegment = [0, currentYSegment];
+    fit1E = plot(timeAxisMethod1,currentYSegment,'-','Color','red');
+else
+    hold('on')
+    txt = {'Line was not fitted because';...
+        'there were not enough points.'};
+    yPoint = mean(ylim);
+    xPoint = mean(xlim);
+    text(xPoint,yPoint,txt,'HorizontalAlignment','center')
+end
+title('Method 1')
+xlabel('time elapsed (min)')
+ylabel('integrated intensity (a.u.)')
+hold('off')
+
+%% plotting the fitted line: Method 2 (cusum)
+subplot(1,windows,2)
+if ~isempty(coefficientsMethod2)
+    currentXSegment = traceFigTimeAxis(1:indexUpper(1));
+    currentYSegment = polyval(coefficientsMethod2,currentXSegment);
+    hold('on')
+    to = -coefficientsMethod2(2) / coefficientsMethod2(1) + nucleusFirstFrame;
+    timeAxisMethod2 = [to, elapsedTime(frames(1:indexUpper(1)))] - nucleusFirstFrame;
+    currentYSegment = [0, currentYSegment];
+    fit1E = plot(timeAxisMethod2,currentYSegment,'-','Color','red');
+else
+    hold('on')
+    txt = {'Line was not fitted because';...
+        'there deviations were not large enough.'};
+    yPoint = mean(ylim);
+    xPoint = mean(xlim);
+    text(xPoint,yPoint,txt,'HorizontalAlignment','center')
+end
+
+hold('off')
+title('Method 2')
+xlabel('time elapsed (min)')
+ylabel('integrated intensity (a.u.)')
+
+%% plotting the fitted line: Method 3 (findchangepts)
+subplot(1,windows,3)
+if ~isempty(coefficientsMethod3)
+    currentXSegment = traceFigTimeAxis(1:indexPoints(1));
+    currentYSegment = polyval(coefficientsMethod3,currentXSegment);
+    hold('on')
+    to = -coefficientsMethod3(2) / coefficientsMethod3(1) + nucleusFirstFrame;
+    timeAxisMethod3 = [to, elapsedTime(frames(1:indexPoints(1)))] - nucleusFirstFrame;
+    currentYSegment = [0, currentYSegment];
+    fit1E = plot(timeAxisMethod3,currentYSegment,'-','Color','red');
+else
+    hold('on')
+    txt = {'Line was not fitted because';...
+        'there deviations were not large enough.'};
+    yPoint = mean(ylim);
+    xPoint = mean(xlim);
+    text(xPoint,yPoint,txt,'HorizontalAlignment','center')
+end
+
+title('Method 3')
+xlabel('time elapsed (min)')
+ylabel('integrated intensity (a.u.)')
+
+%% labeling figure
+sgtitle([prefix ' : particle ' num2str(currentParticle)],...
+    'interpreter','latex')
+set(gcf,'WindowState','maximize')
+% xlabel('time elapsed (min)')
+% ylabel('integrated intensity (a.u.)')
+
+%% testing cusum
+figure('name','testing cusum')
+subplot(1,2,1)
+errorbar(traceFigTimeAxis(Particles{currentChannel}(currentParticle).FrameApproved),...
+    ampIntegralGauss3D(Particles{currentChannel}(currentParticle).FrameApproved),...
+    ones(length(ampIntegralGauss3D(Particles{currentChannel}(currentParticle).FrameApproved)),1)'*errorIntegralGauss3D,...
+    '.-','Color','green','DisplayName','3DGaussAmp');
+hold('on')
+plot(traceFigTimeAxis(indexUpper),amplitudeToFit(indexUpper),'or',...
+    'DisplayName','upper')
+plot(traceFigTimeAxis(indexLower),amplitudeToFit(indexLower),'ob',...
+    'DisplayName','lower')
+legend('show','location','best')
+xlabel('time elapsed (min)')
+ylabel('integrated intensity (a.u.)')
+
+subplot(1,2,2)
+cusum(amplitudeToFit,controlLimit)
+
+sgtitle([prefix ' : particle ' num2str(currentParticle)],...
+    'interpreter','latex')
+
+%% testing findchangepts
+figure('name','testing findchangepts')
+findchangepts(x,'Statistic','linear','MaxNumChanges',maxNumChanges)
+end
+
