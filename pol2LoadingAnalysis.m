@@ -268,11 +268,35 @@ for currentNC = ncOfInterest
     
     xlabel(timeOnHistAxes,'time on (min)')
     ylabel(timeOnHistAxes,'frequency')
-    title(timeOnHistAxes,['time on frequency distribution for 1A3v7, nuclear cycle '...
-        num2str(currentNC) ', all AP bins']);
+    title(timeOnHistAxes,{'time on frequency distribution for 1A3v7'; ['nuclear cycle '...
+        num2str(currentNC) ', all AP bins']});
     xlim(timeOnHistAxes, [0, cycleTime12]) %mins
     standardizeFigure(timeOnHistAxes, [])
     
+end
+
+%% pol2 loading rate histogram (nc12,13,14)
+ncOfInterest = [12 13 14];
+for currentNC = ncOfInterest
+    currentLoadingRateHistFig = figure();
+    currentNCOnly = allCorrespondingNC == currentNC;
+    currentLoadingRateHistAxes = axes(currentLoadingRateHistFig);
+    loadingRateHist = histogram(currentLoadingRateHistAxes,...
+        allInitialSlopes(currentNCOnly), 'normalization', 'pdf', 'BinWidth', 50);
+    hold on 
+    height = max(ylim);
+    plot(currentLoadingRateHistAxes,...
+        [1 1].*nanmean(allInitialSlopes(currentNCOnly)),[0 1].*height,...
+        'DisplayName','Mean')
+    plot(currentLoadingRateHistAxes,...
+        [1 1].*nanmedian(allInitialSlopes(currentNCOnly)),[0 1].*height,...
+        'DisplayName','Median')
+    xlabel(currentLoadingRateHistAxes,'pol2 loading rate (a.u.)')
+    ylabel(currentLoadingRateHistAxes,'probability')
+    title(currentLoadingRateHistAxes,{'Loading Rate distribution for 1A3v7'; ['nuclear cycle '...
+        num2str(currentNC) ', all AP bins']});
+    standardizeFigure(currentLoadingRateHistAxes, [])
+    legend('show')
 end
 
 end
