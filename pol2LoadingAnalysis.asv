@@ -161,9 +161,8 @@ title('rate across AP for 1A3v7,all nc')
 %% rate vs ap scatter with different nuclear cycles
 ncOfInterest = [12 13 14];
 for currentNC = ncOfInterest
-    currentLoadingRateHistFig = figure();
-    currentLoadingRateHistAxes = axes(currentLoadingRateHistFig);
-    plotsLabeledLoading1 = plot(NaN,NaN);
+    
+    plotsLabeledLoading = plot(NaN,NaN);
     namesLoading = {'placeHolder'};
     % allAPPositions = [];
     % allInitialSlopes = [];
@@ -172,14 +171,14 @@ for currentNC = ncOfInterest
     
     %Plotting loading rate vs AP -----------------------------------------
     %Plotting the error bars
-
-    errorbar(currentLoadingRateHistAxes,allAPPositions(currentNCOnly),...
+    currentLoadingRateHistFigfigure()
+    errorbar(allAPPositions(currentNCOnly),...
         allInitialSlopes(currentNCOnly),allSlopeError(currentNCOnly),...
         '.','Color','black');
     hold('on')
     %Plotting the values
-    plotsLabeledLoading1(end+1) =...
-        plot(currentLoadingRateHistAxes,allAPPositions(currentNCOnly),...
+    plotsLabeledLoading(end+1) =...
+        plot(allAPPositions(currentNCOnly),...
         allInitialSlopes(currentNCOnly),'.','MarkerSize',15,...
         'Color','red');
     
@@ -211,7 +210,7 @@ for currentNC = ncOfInterest
     %     figure(scatterTimeOn)
     %     hold on
     
-    legend(plotsLabeledLoading1(2:end),namesLoading(2:end), 'Interpreter', 'none');
+    legend(plotsLabeledLoading(2:end),namesLoading(2:end), 'Interpreter', 'none');
     xlim([0 1])
     xlabel('Embryo Length (%)')
     ylabel('Initial Rate (a.u./min)')
