@@ -54,14 +54,9 @@ set(boxLoading,'Position',[693 43.5000 585.5000 215])
 % set(avgTimeOn,'Position',[691.5000 43.5000 583 303.5000])
 
 
-%% plotting with continous AP axis
-% colorsUsed = {};
-% meansOfSets = [];
+%% compiling data and plotting on continous AP axis (all nc, scatter)
 plotsLabeledLoading = plot(NaN,NaN);
-% plotsLabeledTimeOn = plot(NaN,NaN);
-%plotsLabeledTimeOn = plot(NaN,NaN);
 namesLoading = {'placeHolder'};
-%namesTimeOn = {'placeHolder'};
 allAPPositions = [];
 allInitialSlopes = [];
 allSlopeError = []; % the error is taken to be the norm of the residuals
@@ -151,7 +146,7 @@ for currentDataSet = dataSetsToInclude
     %     hold on
     
 end
-% rate vs ap scatter labeling
+% labeling and titles
 legend(plotsLabeledLoading(2:end),namesLoading(2:end), 'Interpreter', 'none');
 xlim([0 1])
 xlabel('Embryo Length (%)')
@@ -161,24 +156,23 @@ title('rate across AP for 1A3v7,all nc')
 %% rate vs ap scatter with different nuclear cycles
 ncOfInterest = [12 13 14];
 for currentNC = ncOfInterest
-    
-    plotsLabeledLoading = plot(NaN,NaN);
+    currentLoadingRateHistFig = figure();
+    currentLoadingRateHistAxes = axes(currentLoadingRateHistFig);
+    plotsLabeledLoading1 = plot(NaN,NaN);
     namesLoading = {'placeHolder'};
-    % allAPPositions = [];
-    % allInitialSlopes = [];
-    % allSlopeError = []; % the error is taken to be the norm of the residuals
+    %finding the indexes of the spots in the current nuclear cycle
     currentNCOnly = allCorrespondingNC == currentNC;
     
     %Plotting loading rate vs AP -----------------------------------------
     %Plotting the error bars
-    currentLoadingRateHistFigfigure()
-    errorbar(allAPPositions(currentNCOnly),...
+    
+    errorbar(currentLoadingRateHistAxes,allAPPositions(currentNCOnly),...
         allInitialSlopes(currentNCOnly),allSlopeError(currentNCOnly),...
         '.','Color','black');
     hold('on')
     %Plotting the values
-    plotsLabeledLoading(end+1) =...
-        plot(allAPPositions(currentNCOnly),...
+    plotsLabeledLoading1(end+1) =...
+        plot(currentLoadingRateHistAxes,allAPPositions(currentNCOnly),...
         allInitialSlopes(currentNCOnly),'.','MarkerSize',15,...
         'Color','red');
     
@@ -210,7 +204,7 @@ for currentNC = ncOfInterest
     %     figure(scatterTimeOn)
     %     hold on
     
-    legend(plotsLabeledLoading(2:end),namesLoading(2:end), 'Interpreter', 'none');
+    legend(plotsLabeledLoading1(2:end),namesLoading(2:end), 'Interpreter', 'none');
     xlim([0 1])
     xlabel('Embryo Length (%)')
     ylabel('Initial Rate (a.u./min)')
@@ -220,99 +214,90 @@ for currentNC = ncOfInterest
 end
 
 
-
-%%
-% for loading rate vs AP --------------------------------------------------
-% set(gca,'YScale','log')
-
-% for time on vs AP -------------------------------------------------------
-% figure(scatterTimeOn)
-% legend([plotsLabeledLoading(2:end)],{namesLoading{2:end}}, 'Interpreter', 'none');
-% xlim([0 1])
-% xlabel('Embryo Length (%)')
-% ylabel('Initial Rate (a.u./minute)')
-% set(gca,'YScale','log')
-
 %% plotting with binned ap
 ap = data(1).APbinID;
 apBinWidth = ap(2)-ap(1);
 % apMid = ap+apBinWidth/2;
 % apMidString = cellstr(string(ap+apBinWidth/2));
 numAPBins = length(ap);
-meanInitialRateAP = NaN(1,numAPBins);
-seInitialRateAP = NaN(1,numAPBins);
-meanTimeOnAP = NaN(1,numAPBins);
-apBinGrouping = NaN(1,length(allInitialSlopes)); % stores corresponding bin string for allInitialSlopes
-% allTimeOnByAP = [];
 
-% binPlots = plot(NaN,NaN);
-% binNames = {'placeholder'};
-
-for currentAPBinIndex = 2:numAPBins % index of upper bound of ap
-    apLowerBound = ap(currentAPBinIndex-1);
-    apUpperBound = ap(currentAPBinIndex);
-    apPositionsIncluded = (allAPPositions>apLowerBound) & (allAPPositions<apUpperBound);
-    apBinGrouping(apPositionsIncluded) = round(mean([apLowerBound,apUpperBound]),2,'significant');
+ncOfInterest = [12 13 14];
+for currentNC = ncOfInterest
+    meanInitialRateAP = NaN(1,numAPBins);
+    seInitialRateAP = NaN(1,numAPBins);
+    meanTimeOnAP = NaN(1,numAPBins);
+    apBinGrouping = NaN(1,length(allInitialSlopes)); % stores corresponding bin string for allInitialSlopes
     
-    meanInitialRateAP(currentAPBinIndex-1) = nanmean(allInitialSlopes(apPositionsIncluded));
-    denomLoading = sqrt(sum(~isnan((allInitialSlopes(apPositionsIncluded)))));
+    % finding the indexes of the ones in the current nuclear cycle
+    currentNCOnly = allCorrespondingNC == currentNC;
+    subSetSlopeData = allInitialSlopes(currentNCOnly);
+    subSetTimeOnData = allTimeOn(currentNCOnly);
     
-    meanTimeOnAP(currentAPBinIndex-1) = nanmean(allTimeOn(apPositionsIncluded));
-    %     allTimeOnByAP = [allTimeOnByAP, allTimeOn(pointsIncluded)];
-    denomTimeOn = sqrt(sum(~isnan((allTimeOn(apPositionsIncluded)))));
-    
-    if denomLoading==0
-        denomLoading = 1;
+    for currentAPBinIndex = 2:numAPBins % index of upper bound of ap
+        apLowerBound = ap(currentAPBinIndex-1);
+        apUpperBound = ap(currentAPBinIndex);
+        apPositionsIncluded = (allAPPositions(currentNCOnly)>apLowerBound) & (allAPPositions(currentNCOnly)<apUpperBound);
+        apBinGrouping(apPositionsIncluded) = round(mean([apLowerBound,apUpperBound]),2,'significant');
+        
+        meanInitialRateAP(currentAPBinIndex-1) = nanmean(subSetSlopeData(apPositionsIncluded));
+        denomLoading = sqrt(sum(~isnan((subSetSlopeData(apPositionsIncluded)))));
+        
+        meanTimeOnAP(currentAPBinIndex-1) = nanmean(subSetTimeOnData(apPositionsIncluded));
+        denomTimeOn = sqrt(sum(~isnan((subSetTimeOnData(apPositionsIncluded)))));
+        
+        if denomLoading==0
+            denomLoading = 1;
+        end
+        seInitialRateAP(currentAPBinIndex-1) = nanstd(subSetSlopeData(apPositionsIncluded))/denomLoading; %au/min
+        
+        if denomTimeOn==0
+            denomTimeON = 1;
+        end
+        seTimeOnAP(currentAPBinIndex-1) = nanstd(subSetTimeOnData(apPositionsIncluded))/denomTimeON; %min
+        
+        % need labeling? 
+        % Do we need the bottom one?
     end
-    seInitialRateAP(currentAPBinIndex-1) = nanstd(allInitialSlopes(apPositionsIncluded))/denomLoading; %au/min
     
-    if denomTimeOn==0
-        denomTimeON = 1;
-    end
-    seTimeOnAP(currentAPBinIndex-1) = nanstd(allTimeOn(apPositionsIncluded))/denomTimeON; %min
+    %% rate vs. ap curve figure
+    rateFig = figure();
+    rateAxes = axes(rateFig);
+    % % bar(ap+apBinWidth/2,meanInitialRateAP);
+    idx = ~any(isnan(seInitialRateAP),1);
+    x = ap+apBinWidth/2;
+    er = errorbar(rateAxes,x(idx),meanInitialRateAP(idx), seInitialRateAP(idx));
+    xlim(rateAxes,[.275,.65])
+    ylim(rateAxes,[0, 1000])
+    xlabel(rateAxes,'fraction anterior-posterior')
+    ylabel(rateAxes,'pol II loading rate(a.u./min)')
+    standardizeFigure(rateAxes, [], 'fontSize', 14)
+    set(er, 'LineStyle', '-')
     
-    %     if sum(pointsIncluded)
-    %         binPlots(end+1) = plot(allAPPositions(pointsIncluded),...
-    %             allInitialSlopes(pointsIncluded),'.','MarkerSize',10);
-    %     end
+    %% time on vs AP figure
+    timeOnFig = figure();
+    timeOnAxes = axes(timeOnFig);
+    idXTimeOn = ~any(isnan(seTimeOnAP),1);
+    x = ap+apBinWidth/2;
+    erTimeON = errorbar(timeOnAxes,x(idXTimeOn),meanTimeOnAP(idXTimeOn), seTimeOnAP(idXTimeOn));
+    xlim(timeOnAxes,[.275 .65])
+    ylim(timeOnAxes,[0 20])
+    currentNC = 12; %only plots for nc12
+    title(['time on across AP for 1A3v7, nuclear cycle ',...
+        num2str(currentNC)]);
+    xlabel(timeOnAxes,'fraction anterior-posterior')
+    ylabel(timeOnAxes,'time on (min)')
+    standardizeFigure(timeOnAxes, [], 'fontSize', 14)
+    set(erTimeON, 'LineStyle', '-')
 end
 
-%% rate vs ap box plot
+
+%% rate vs ap BOX PLOT
 currentNC = 12;
 figure(boxLoading)
 boxplot(allInitialSlopes,apBinGrouping,'PlotStyle','Compact')
 title(['rate across AP for 1A3v7, nuclear cycle ',...
     num2str(currentNC)]);
 
-%% rate vs. ap curve figure
-rateFig = figure();
-rateAxes = axes(rateFig);
-% % bar(ap+apBinWidth/2,meanInitialRateAP);
-idx = ~any(isnan(seInitialRateAP),1);
-x = ap+apBinWidth/2;
-er = errorbar(rateAxes,x(idx),meanInitialRateAP(idx), seInitialRateAP(idx));
-xlim(rateAxes,[.275,.65])
-ylim(rateAxes,[0, 1000])
-xlabel(rateAxes,'fraction anterior-posterior')
-ylabel(rateAxes,'pol II loading rate(a.u./min)')
-standardizeFigure(rateAxes, [], 'fontSize', 14)
-set(er, 'LineStyle', '-')
-
-%% time on vs AP figure
-timeOnFig = figure();
-timeOnAxes = axes(timeOnFig);
-idXTimeOn = ~any(isnan(seTimeOnAP),1);
-x = ap+apBinWidth/2;
-erTimeON = errorbar(timeOnAxes,x(idXTimeOn),meanTimeOnAP(idXTimeOn), seTimeOnAP(idXTimeOn));
-xlim(timeOnAxes,[.275 .65])
-ylim(timeOnAxes,[0 20])
-currentNC = 12; %only plots for nc12
-title(['time on across AP for 1A3v7, nuclear cycle ',...
-    num2str(currentNC)]);
-xlabel(timeOnAxes,'fraction anterior-posterior')
-ylabel(timeOnAxes,'time on (min)')
-standardizeFigure(timeOnAxes, [], 'fontSize', 14)
-set(erTimeON, 'LineStyle', '-')
 
 %% time on histogram figure (nc12,13,14)
 ncOfInterest = [12 13 14];
