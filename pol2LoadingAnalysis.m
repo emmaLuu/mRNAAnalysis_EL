@@ -156,8 +156,8 @@ title('rate across AP for 1A3v7,all nc')
 %% rate vs ap scatter with different nuclear cycles
 ncOfInterest = [12 13 14];
 for currentNC = ncOfInterest
-    currentLoadingRateHistFig = figure();
-    currentLoadingRateHistAxes = axes(currentLoadingRateHistFig);
+    rateHistFig = figure();
+    rateHistAxes = axes(rateHistFig);
     plotsLabeledLoading1 = plot(NaN,NaN);
     namesLoading = {'placeHolder'};
     %finding the indexes of the spots in the current nuclear cycle
@@ -166,13 +166,13 @@ for currentNC = ncOfInterest
     %Plotting loading rate vs AP -----------------------------------------
     %Plotting the error bars
     
-    errorbar(currentLoadingRateHistAxes,allAPPositions(currentNCOnly),...
+    errorbar(rateHistAxes,allAPPositions(currentNCOnly),...
         allInitialSlopes(currentNCOnly),allSlopeError(currentNCOnly),...
         '.','Color','black');
     hold('on')
     %Plotting the values
     plotsLabeledLoading1(end+1) =...
-        plot(currentLoadingRateHistAxes,allAPPositions(currentNCOnly),...
+        plot(rateHistAxes,allAPPositions(currentNCOnly),...
         allInitialSlopes(currentNCOnly),'.','MarkerSize',15,...
         'Color','red');
     
@@ -208,9 +208,10 @@ for currentNC = ncOfInterest
     xlim([0 1])
     xlabel('Embryo Length (%)')
     ylabel('Initial Rate (a.u./min)')
-    title(['rate across AP for 1A3v7, nuclear cycle ',...
-        num2str(currentNC)]);
-    
+    rateScatterTitle = ['rate across AP scatter for 1A3v7, nuclear cycle ',...
+        num2str(currentNC)];
+    title(gca, rateScatterTitle);
+    set(gcf, 'NumberTitle', 'off','Name', rateScatterTitle);
 end
 
 
@@ -272,7 +273,10 @@ for currentNC = ncOfInterest
     ylabel(rateAxes,'pol II loading rate(a.u./min)')
     standardizeFigure(rateAxes, [], 'fontSize', 14)
     set(er, 'LineStyle', '-')
-    title(['rate across AP, nc', num2str(currentNC)])
+    rateTitleLine = ['rate across AP, nc', num2str(currentNC)];
+    title(rateAxes, rateTitleLine)
+    set(rateFig, 'NumberTitle', 'off','Name', rateTitleLine);
+
     
     %% time on vs AP figure
     timeOnFig = figure();
@@ -286,7 +290,9 @@ for currentNC = ncOfInterest
     ylabel(timeOnAxes,'time on (min)')
     standardizeFigure(timeOnAxes, [], 'fontSize', 14)
     set(erTimeON, 'LineStyle', '-')
-    title(['time on across AP, nc', num2str(currentNC)])
+    timeTitleLine = ['time on across AP, nc', num2str(currentNC)];
+    title(timeOnAxes,timeTitleLine);
+    set(timeOnFig, 'NumberTitle', 'off','Name', timeTitleLine);
 
 end
 
@@ -294,9 +300,10 @@ end
 currentNC = 12;
 figure(boxLoading)
 boxplot(allInitialSlopes,apBinGrouping,'PlotStyle','Compact')
-title(['rate across AP for 1A3v7, nuclear cycle ',...
-    num2str(currentNC)]);
-
+boxTitle = ['rate across AP for 1A3v7, nuclear cycle ',...
+    num2str(currentNC)];
+title(gca, boxTitle);
+set(gcf, 'NumberTitle', 'off','Name', boxTitle);
 
 %% time on histogram figure (nc12,13,14)
 ncOfInterest = [12 13 14];
@@ -313,35 +320,40 @@ for currentNC = ncOfInterest
     
     xlabel(timeOnHistAxes,'time on (min)')
     ylabel(timeOnHistAxes,'frequency')
-    title(timeOnHistAxes,{'time on frequency distribution for 1A3v7'; ['nuclear cycle '...
-        num2str(currentNC) ', all AP bins']});
+    timeOnHistTitle = {'time on frequency distribution for 1A3v7'; ['nuclear cycle '...
+        num2str(currentNC) ', all AP bins']};
+    title(timeOnHistAxes, timeOnHistTitle);
     xlim(timeOnHistAxes, [0, cycleTime12]) %mins
     standardizeFigure(timeOnHistAxes, [])
+    set(timeOnHistFig, 'NumberTitle', 'off','Name', timeOnHistTitle);
     
 end
 
 %% pol2 loading rate histogram (nc12,13,14)
 ncOfInterest = [12 13 14];
 for currentNC = ncOfInterest
-    currentLoadingRateHistFig = figure();
+    rateHistFig = figure();
     currentNCOnly = allCorrespondingNC == currentNC;
-    currentLoadingRateHistAxes = axes(currentLoadingRateHistFig);
-    loadingRateHist = histogram(currentLoadingRateHistAxes,...
+    rateHistAxes = axes(rateHistFig);
+    rateHist = histogram(rateHistAxes,...
         allInitialSlopes(currentNCOnly), 'normalization', 'pdf', 'BinWidth', 50);
     hold on
     height = max(ylim);
-    plot(currentLoadingRateHistAxes,...
+    plot(rateHistAxes,...
         [1 1].*nanmean(allInitialSlopes(currentNCOnly)),[0 1].*height,...
         'DisplayName','Mean')
-    plot(currentLoadingRateHistAxes,...
+    plot(rateHistAxes,...
         [1 1].*nanmedian(allInitialSlopes(currentNCOnly)),[0 1].*height,...
         'DisplayName','Median')
-    xlabel(currentLoadingRateHistAxes,'pol2 loading rate (a.u.)')
-    ylabel(currentLoadingRateHistAxes,'probability')
-    title(currentLoadingRateHistAxes,{'Loading Rate distribution for 1A3v7'; ['nuclear cycle '...
-        num2str(currentNC) ', all AP bins']});
-    standardizeFigure(currentLoadingRateHistAxes, [])
+    xlabel(rateHistAxes,'pol2 loading rate (a.u.)')
+    ylabel(rateHistAxes,'frequency')
+    rateHistTitle = {'loading rates: 1A3v7'; ['nuclear cycle '...
+        num2str(currentNC) ', all AP bins']};
+    title(rateHistAxes,rateHistTitle);
+    standardizeFigure(rateHistAxes, [])
     legend('show')
+    set(rateHistFig, 'NumberTitle', 'off','Name', rateHistTitle);
+
 end
 
 end
