@@ -325,7 +325,7 @@ for currentNC = ncOfInterest
     title(timeOnHistAxes, timeOnHistTitle);
     xlim(timeOnHistAxes, [0, cycleTime12]) %mins
     standardizeFigure(timeOnHistAxes, [])
-    set(timeOnHistFig, 'NumberTitle', 'off','Name', timeOnHistTitle);
+    %set(timeOnHistFig, 'NumberTitle', 'off','Name', timeOnHistTitle);
     
 end
 
