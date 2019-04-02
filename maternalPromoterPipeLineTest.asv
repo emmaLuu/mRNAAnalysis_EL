@@ -29,9 +29,11 @@ for i = 1%:numberOfSeries
         imshow(filteredImage,[])
         
         figure(nucleiClass) 
-        nucleiMaskFiltered = maskNuclei(filteredImage);
-        nucleiMask = maskNuclei(currentSlice);
-
+        invertedFilteredImage = imcomplement(filteredImage);
+        invertedImage = imcomplement(currentSlice);
+%         nucleiMaskFiltered = maskNuclei(filteredImage);
+%         nucleiMask = maskNuclei(currentSlice);
+%         
 %         subplot(2,1,1)
 %         nucleiFilteredImage = filteredImage.*nucleiMaskFiltered;
 %         imshow(nucleiFilteredImage,[])
