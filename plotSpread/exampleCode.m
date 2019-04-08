@@ -1,0 +1,6 @@
+% Example code for plotSpread.m
+
+data = {randn(25, 1), randn(100, 1) + 1, randn(300, 1) - 0.5};
+plotSpread(data, ...
+    'xNames', {'25 pts', '100 pts', '300 pts'}, ...
+    'distributionMarkers', {'o', '+', '.'});

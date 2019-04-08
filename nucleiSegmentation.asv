@@ -148,21 +148,17 @@ if show && ~isempty(centers)
     figureHandle = figure('Units','normalized','Position',[0 0 1 1]);
     % showing the circles included in the mask
 %     imshow(image,[])
-    subplot(1,3,1)
+    subplot(1,2,1)
     imshow(blurredImage,[])
     hold on
     viscircles(centers, radii,'Color','b'); % maybe check out why there is an outer white layer
     
-    subplot(1,3,2)
-    histogram(nonzeros(blurredImage));
-    
-    subplot(1,3,3)
-    [counts,edges] = histcounts(nonzeros(blurredImage));
-    for t = 1:length(counts)
-        stack = blurredImage<=edges(t);
+    subplot(1,2,2)
+    for t = 1:length(counts)-2
+        stack = edges(t)<=blurredImage & blurredImage<=edges(t+2);
         imshow(stack,[])
-        title([num2str(edges(t))])
-        pause(0.01)
+        title([num2str(edges(t)), ' & ' num2str(edges(t+2))])
+        pause(0.05)
     end
     
 %     surf(blurredImage,'LineStyle','none','FaceColor','interp')
