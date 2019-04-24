@@ -28,7 +28,6 @@ end
 
 % Calculations 
 constructAvg = []; % might delete this later
-constructNuclei = {};
 constructCounter = 0;
 % a struct called constructs will be made with the following loop
 % Fields named 'individualNucleiAvg', 'seriesAvg'
@@ -70,8 +69,8 @@ for i = 1:length(folders)
     % slice as well as store the individual nuclei average
     %% STOPPED HERE! 
     seriesCounter = 0;
-    seriesNuclei = [];
     seriesAvg = [];
+    seriesNuclei = {};
     for j = 1:length(movieStruct)
         maxNucleiCount = 0;
         maxSliceIndex = 0;
@@ -84,19 +83,18 @@ for i = 1:length(folders)
         seriesCounter = seriesCounter + 1;
         if maxSliceIndex
             seriesAvg(seriesCounter) = movieStruct(j).slice(maxSliceIndex).mean;
-            temp = [movieStruct(j).slice(maxSliceIndex).nuclei(:).averageFluo];
-            seriesNuclei = [seriesNuclei temp];
+            seriesNuclei{seriesCounter} = {movieStruct(j).slice(maxSliceIndex).nuclei}
         else
             seriesAvg(seriesCounter) = NaN;
         end
     end
     
     constructCounter = constructCounter + 1;
-    constructNuclei{constructCounter} = seriesNuclei;
     constructAvg(constructCounter) = mean(seriesAvg);
 end
 
-figure() % bar plot
+% Change this to a swarm plot
+figure()
 bar(1:length(constructAvg),constructAvg)
 
 % labeling the x axis
@@ -110,9 +108,8 @@ xticks(1:length(constructAvg))
 xticklabels(constructLabels)
 title('Construct Averages')
 
-figure() % swarm plot
-hMeans = plotSpread(constructNuclei, ...
-                'xNames',constructLabels);
+figure()
+
 
 % next steps:
 % take the average of the series avg and store it in a variable

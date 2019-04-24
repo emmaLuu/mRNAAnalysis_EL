@@ -48,16 +48,16 @@ for i = 1:numberOfSeries
         embryoMask = double(maskEmbryo(currentSlice));
         embryoOnly = embryoMask.*currentSlice;
         
-%         % a gui for a quick glance at the diameter of the nuclei
-%         figure('units','normalized','outerposition',[0 0 1 1])
-%         imshow(currentSlice,[])
-%         d = imdistline; % measuring diameter of circles
-
-%         figure(imageFigure) %--------------------------------
-%         imshow(embryoOnly,[])
+        %         % a gui for a quick glance at the diameter of the nuclei
+        %         figure('units','normalized','outerposition',[0 0 1 1])
+        %         imshow(currentSlice,[])
+        %         d = imdistline; % measuring diameter of circles
         
-        % Nuclear classification 
-        % note: find a way so that it does not classify parts of the edge of the 
+        %         figure(imageFigure) %--------------------------------
+        %         imshow(embryoOnly,[])
+        
+        % Nuclear classification
+        % note: find a way so that it does not classify parts of the edge of the
         % embryo as a nucleus
         nuclei = generateNuclearMask(embryoOnly,rMin,rMax,sigma,show);
         
@@ -69,8 +69,8 @@ for i = 1:numberOfSeries
         
         embryo(i).slice(j).nuclei = nuclei;
         embryo(i).slice(j).mean = meanFluo; % the total mean of the slice
-            
-%         pause(0.25)
+        
+        %         pause(0.25)
     end
 end
 
@@ -87,7 +87,7 @@ function nucleus = generateNuclearMask(image,rMin,rMax,sigma,show)
 % This function takes an image and applies a 2D gaussian
 % filter to that image. Nuclei are identified and a nuclear mask is
 % created for each one is created. A structure with fields "mask","center",
-% and "radius" is returned. 
+% and "radius" is returned.
 
 
 % applying 2D gaussian filter
@@ -96,35 +96,36 @@ blurredImage = imgaussfilt(image,sigma);
 
 % identifiying nuclei center and radius
 % Method 1: imfindCircles with dark object polarity...
-% This does not work all the time. 
+% This does not work all the time.
 if mean(image,'all') > 15 % find a better threshold...but probably not doing anything...
     [centers,radii] = imfindcircles(blurredImage,[rMin rMax],...
         'ObjectPolarity','dark');
-%     disp('Method 1')
+    %     disp('Method 1')
 else
     % delete later please
-%     figure()
-%     subplot(2,1,1)
-%     histogram(image)
-%     title('Original')
-%     subplot(2,1,2)
-%     histogram(blurredImage)
-%     title('Blurred')
+    %     figure()
+    %     subplot(2,1,1)
+    %     histogram(image)
+    %     title('Original')
+    %     subplot(2,1,2)
+    %     histogram(blurredImage)
+    %     title('Blurred')
     
-    % method 2 and 3
-    [counts,edges] = histcounts(nonzeros(blurredImage));
+    % method 2: thresholding image
+    [counts,binEdges] = histcounts(nonzeros(blurredImage));
     [~,sortedIndex] = sort(counts);
-    topTwoIntensities = edges(sortedIndex(end-1:end));
-    threshold = mean(topTwoIntensities);
-    edgeFiltered = edge(blurredImage>threshold);
-    
-    % method 3
-    BW2 = bwareafilt(edgeFiltered,pi().*[rMin rMax].^2);
-    [centers,radii] = imfindcircles(BW2,[rMin rMax],...
+    threshold = binEdges(sortedIndex(end));
+    areaFiltered = bwareafilt(blurredImage<=threshold,pi().*[rMin rMax].^2);
+    [centers,radii] = imfindcircles(areaFiltered,[rMin rMax],...
             'ObjectPolarity','dark');
+        
     if isempty(centers)
-        % method 2: edge and imfindcircles
-        [centers,radii] = imfindcircles(edgeFiltered,[rMin rMax],...
+        % method 3: edge and imfindcircles
+        topTwoIntensities = binEdges(sortedIndex(end-1:end));
+        newThreshold = mean(topTwoIntensities);
+        edgeFiltered = edge(blurredImage>newThreshold);
+        areaFiltered = bwareafilt(edgeFiltered,pi().*[rMin rMax].^2);
+        [centers,radii] = imfindcircles(areaFiltered,[rMin rMax],...
             'ObjectPolarity','dark');
         %disp('Method 3')
     else
@@ -147,40 +148,66 @@ end
 if show && ~isempty(centers)
     figureHandle = figure('Units','normalized','Position',[0 0 1 1]);
     % showing the circles included in the mask
-%     imshow(image,[])
-    subplot(1,3,1)
+    %     imshow(image,[])
+    subplot(1,2,1)
     imshow(blurredImage,[])
     hold on
     viscircles(centers, radii,'Color','b'); % maybe check out why there is an outer white layer
     
-    subplot(1,3,2)
-    histogram(nonzeros(blurredImage));
+%     subplot(1,3,2)
+%     histogram(nonzeros(blurredImage));
+    subplot(1,2,2)
+    [counts,binEdges] = histcounts(nonzeros(blurredImage));
+    [~,sortedIndex] = sort(counts);
+    threshold = binEdges(sortedIndex(end));
+    bw = blurredImage<=threshold;
     
-    subplot(1,3,3)
-    [counts,edges] = histcounts(nonzeros(blurredImage));
-    for t = 1:length(counts)
-        stack = blurredImage<=edges(t);
-        imshow(stack,[])
-        title([num2str(edges(t))])
-        pause(0.01)
-    end
+    % method : watershed 
+    % remove any small dots in the background before doing this
+    % compute the distance transform
+    D = -bwdist(~bw);
+    %imshow(D,[])
+    % create small spots that are roughly in the middle of the cells to be
+    % segmented
+    mask = imextendedmin(D,2);
+    %imshowpair(bw,mask,'blend')
+    % modify the distance transform so it only has minima at the desired
+    % locations
+    D2 = imimposemin(D,mask);
+    % compute the watershed transform of D
+    Ld2 = watershed(D2);
+    % use the ridge lines to segment the binary image by changing the corresponding pixels into background
+    bw2 = bw;
+    bw2(Ld2 == 0) = 0;
+    bw3 = bwareafilt(bw2,pi().*[rMin rMax].^2);
+    imshow(bw3,[])
+    hold on
+    [centersTest,radiiTest] = imfindcircles(bw3,[rMin rMax]);
+    viscircles(centersTest, radiiTest,'Color','b');
     
-%     surf(blurredImage,'LineStyle','none','FaceColor','interp')
-%     xlim([0 512])
-%     ylim([0 512])
-
-%     mask = zeros(size(blurredImage));
-%     mask(100:end-100,100:end-100) = 1;
-%     bw = activecontour(blurredImage,mask,300);
-%     imshow(bw)
-
-%     histogram(radii)
-%     title('Histogram of Radii')
+%     for t = 1:length(counts)
+%         stack = blurredImage<=edges(t);
+%         imshow(stack,[])
+%         title([num2str(edges(t))])
+%         pause(0.005)
+%     end
+    
+    %     surf(blurredImage,'LineStyle','none','FaceColor','interp')
+    %     xlim([0 512])
+    %     ylim([0 512])
+    
+    %     mask = zeros(size(blurredImage));
+    %     mask(100:end-100,100:end-100) = 1;
+    %     bw = activecontour(blurredImage,mask,300);
+    %     imshow(bw)
+    
+    %     histogram(radii)
+    %     title('Histogram of Radii')
     
     pause(0.1)
 elseif show && isempty(centers)
     disp('No nuclei found')
-end 
+end
 
 % Creating mask for each nuclei
 imageSizeX = size(image,1);
@@ -213,7 +240,7 @@ mask = zeros(size(image));
 
 for i = 1:length(nucleus)
     currentNucleus = image.*nucleus(i).mask;
-    nucleus(i).average = mean(nonzeros(currentNucleus)); % need to think more carefully about the nonzeros
+    nucleus(i).averageFluo = mean(nonzeros(currentNucleus)); % need to think more carefully about the nonzeros
     mask = mask + nucleus(i).mask;
 end
 
